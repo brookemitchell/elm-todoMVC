@@ -33,20 +33,24 @@ type Msg
     | UpdateField String
     | Complete Todo
     | Delete Todo
-    | DeleteAllCompleted
+    | Clear
     | Filter Todo
+
+
+initialTodo : Todo
+initialTodo =
+    { title = ""
+    , completed = False
+    , editing = False
+    , id = 0
+    }
 
 
 initialModel : Model
 initialModel =
     { todos = []
-    , todo =
-        { title = ""
-        , completed = False
-        , editing = False
-        , id = 0
-        }
     , filter = All
+    , todo = initialTodo
     , uid = 0
     }
 
@@ -65,41 +69,27 @@ update msg model =
                 { model | todo = newTodo }
 
         Add ->
-            let
-                modelTodo =
-                    model.todo
-
-                newTodo =
-                    { modelTodo | id = model.uid + 1 }
-            in
-                { model
-                    | todos = newTodo :: model.todos
-                    , todo = initialModel.todo
-                    , uid = model.uid + 1
-                }
+            { model
+                | todos = model.todo :: model.todos
+                , todo = { initialTodo | id = model.uid + 1 }
+                , uid = model.uid + 1
+            }
 
         Complete todo ->
             let
-                ntd =
-                    { todo | completed = not todo.completed }
-
-                ntdList =
-                    List.map
-                        (\mTd ->
-                            if mTd.id == todo.id then
-                                { mTd | completed = not mTd.completed }
-                            else
-                                mTd
-                        )
-                        model.todos
+                updateTodo thisTodo =
+                    if thisTodo.id == todo.id then
+                        { todo | completed = True }
+                    else
+                        thisTodo
             in
-                { model | todos = ntdList }
+                { model | todos = List.map updateTodo model.todos }
 
         Delete todo ->
             { model | todos = List.filter (\mTd -> mTd.id /= todo.id) model.todos }
 
-        DeleteAllCompleted ->
-            { model | todos = List.filter (\mTd -> not mTd.completed) model.todos }
+        Clear ->
+            { model | todos = List.filter (\mTd -> mTd.completed == False) model.todos }
 
         Filter filterState ->
             model
@@ -127,7 +117,7 @@ view model =
                     (List.map todoView model.todos)
                 ]
             ]
-        , button [ class "clear-completed", onClick DeleteAllCompleted ] [ text "Delete all completed" ]
+        , button [ class "clear-completed", onClick Clear ] [ text "Delete all completed" ]
         ]
 
 
